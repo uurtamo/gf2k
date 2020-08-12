@@ -1,9 +1,9 @@
-package "github.com/uurtamo/gf2k"
+package gf2k
 
 import (
 
 	"math/bits"
-	"fmt"
+	//	"fmt"
 )
 
 type Field struct {
@@ -113,7 +113,7 @@ func Multiply(e1 *Element, e2 *Element) *Element {
 	return e3
 }
 
-func MultiplySparseFaster(e1 *Element, e2 *Element) *Element {
+func MultiplySparse(e1 *Element, e2 *Element) *Element {
 
 	var setBits uint64
 	var wordCount uint64
@@ -137,9 +137,9 @@ func MultiplySparseFaster(e1 *Element, e2 *Element) *Element {
 		}
 	}
 
-	fmt.Printf("setbits in second argument is %d\n",setBits)
+	//	fmt.Printf("setbits in second argument is %d\n",setBits)
 
-	fmt.Printf("bits are at %v\n",LL)
+	//	fmt.Printf("bits are at %v\n",LL)
 
 	NaiveMultiplyFaster(e1,LL,e3,e1.Field)
 	return e3
@@ -226,7 +226,7 @@ func PeasantAlgorithm(e1 *Element, e2 *Element, e3 *Element, F *Field) {
 
 func NaiveMultiplyFaster(e1 *Element, e2 []uint64, e3 *Element, F *Field) {
 
-	fmt.Printf("multiplying %v by bits in %v for field %v\n",e1,e2,F)
+	//	fmt.Printf("multiplying %v by bits in %v for field %v\n",e1,e2,F)
 
 	// in the special case where only a constant number of bits are
 	// going to be set in the second argument, we can just pass the
@@ -341,7 +341,7 @@ func NaiveMultiplyFaster(e1 *Element, e2 []uint64, e3 *Element, F *Field) {
 
 	for bitptr > F.Poly.HighBit {
 
-		fmt.Printf("bitptr: %d F.Poly.HighBit %d\n",bitptr,F.Poly.HighBit);
+		//		fmt.Printf("bitptr: %d F.Poly.HighBit %d\n",bitptr,F.Poly.HighBit);
 
 		// everything to the left of bitptr should already be
 		// a zero
@@ -449,7 +449,7 @@ func Invert(e1 *Element) *Element {
 		e2=Square(e2)
 		//		fmt.Printf("e2 after sq\n")
 		//		e2.Print()
-		result=Multiply(e2,result)
+		result=MultiplySparse(e2,result)
 		//		fmt.Printf("result after multiply\n")
 		//		result.Print()
 	}
@@ -462,7 +462,7 @@ func Square(e1 *Element) *Element {
 	e3:=new(Element)
 	e3.Init(e1.Field)
 
-	e3=Multiply(e1,e1)
+	e3=MultiplySparse(e1,e1)
 	return(e3)
 }
 
@@ -538,9 +538,9 @@ func (e1 *Element) Print() {
 
 	for i=0; i<=e1.Field.Poly.HighWord; i++ {
 
-		fmt.Printf("%v ",e1.Packed[i])
+		//		fmt.Printf("%v ",e1.Packed[i])
 	}
-	fmt.Printf("\n")
+	//	fmt.Printf("\n")
 }
 
 func (e1 *Element) Reduce() {
