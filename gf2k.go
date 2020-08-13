@@ -3,7 +3,7 @@ package gf2k
 import (
 
 	"math/bits"
-	//	"fmt"
+	"fmt"
 )
 
 type Field struct {
@@ -538,9 +538,9 @@ func (e1 *Element) Print() {
 
 	for i=0; i<=e1.Field.Poly.HighWord; i++ {
 
-		//		fmt.Printf("%v ",e1.Packed[i])
+		fmt.Printf("%v ",e1.Packed[i])
 	}
-	//	fmt.Printf("\n")
+	fmt.Printf("\n")
 }
 
 func (e1 *Element) Reduce() {
@@ -567,3 +567,237 @@ func (e1 *Element) ForceReduce() {
 	}
 }
 
+func (quotient []uint64, divisor []uint64, dividend []uint64, remainder []uint64, F *Field) F2Division {
+
+	// we are going to divide the dividend by the divisor, storing the result in
+	// the quotient and the remainder
+
+	// we assume that quotient and remainder are passed in already zeroed
+
+	var bitptr uint64
+	var divisorWidth uint64
+	var thunderbird uint64
+	var leadingOneWord uint64
+	var leadingZeros uint64
+	var trail uint64
+	var thunderbird uint64
+	var window uint64
+	var skippo int
+
+	var divisorHighBit uint64
+	var dividendHighBit uint64
+
+	var offsetGap uint64
+
+	var wordCounter uint64
+
+	divisorHighBit=F.Poly.HighBit
+	dividendHighBit=F.Poly.HighBit
+
+	// first we need to determine the bitwidth of the dividend and the divisor
+
+	for dividendHighBit == F.Poly.HighBit {
+
+		trail = (bitptr % 64) + 1
+		thunderbird = bitptr/64
+		window=0
+
+		if (trail == 64) || (bitptr < 64) {
+
+			window = dividend[thunderbird] << (64-trail)
+
+		} else {
+
+			window |= ((((1<<trail)-1) & dividend[thunderbird]) << (64-trail))
+			window |= (((((1<<(64-trail))-1) << trail) & dividend[thunderbird-1]) >> trail)
+		}
+
+		skippo=bits.LeadingZeros64(window)
+
+		bitptr-=uint64(skippo)
+
+		if skippo==0 {
+			dividendHighBit=bitptr
+		}
+	}
+
+	bitptr=F.Poly.HighBit
+
+	for divisorHighBit == F.Poly.HighBit {
+
+		trail = (bitptr % 64) + 1
+		thunderbird = bitptr/64
+		window=0
+
+		if (trail == 64) || (bitptr < 64) {
+
+			window = divisor[thunderbird] << (64-trail)
+
+		} else {
+
+			window |= ((((1<<trail)-1) & divisor[thunderbird]) << (64-trail))
+			window |= (((((1<<(64-trail))-1) << trail) & divisor[thunderbird-1]) >> trail)
+		}
+
+		skippo=bits.LeadingZeros64(window)
+
+		bitptr-=uint64(skippo)
+
+		if skippo==0 {
+			divisorHighBit=bitptr
+		}
+	}
+
+	bitptr=dividendHighBit
+
+	for bitptr > divisorHighBit {
+
+		// everything to the left of bitptr should already be
+		// a zero
+
+		trail = (bitptr % 64) + 1
+		thunderbird = bitptr/64
+		window=0
+
+		// trail is the leftmost portion of the window that we should obtain
+		// from the current word expressed as a bitlength. if it has a leading one,
+		// we'll zero it out along with the ones for the rest of the field polynomial, then
+		// we'll count the leading zeros, and advance bitptr that many
+		// slots
+
+		if (trail == 64) || (bitptr < 64) {
+
+			window = dividend[thunderbird] << (64-trail)
+
+		} else {
+
+			window |= ((((1<<trail)-1) & dividend[thunderbird]) << (64-trail))
+			window |= (((((1<<(64-trail))-1) << trail) & dividend[thunderbird-1]) >> trail)
+		}
+
+		skippo=bits.LeadingZeros64(window)
+
+		if skippo==0 {
+
+			// we've found the first set 1 bit in the leftmost nonzero word of the dividend
+
+			// now we need to mod out by the divisor -- a 1 will be stored in the quotient
+			// at this offset
+
+			dividendWindow=0
+			divisorWindow=0
+			quotient[bitptr / 64] |= (1<<(trail -1))
+			
+			offsetGap=(bitptr % 64) - (divisorHighBit % 64)
+
+			if offsetGap == 0 {
+
+				for wordCounter=divisorHighBit / 64; wordCounter >=0; wordCounter-- {
+					dividend[bitptr/64-((divisorHighBit/64)-wordCounter)] ^= divisor[wordCounter]
+				}
+
+			} else if (offsetGap > 0) {
+
+				for wordCounter=divisorHighBit / 64; wordCounter >=1; wordCounter-- {
+
+					// this is the case where there are at least two words required
+					// to describe the divisor
+
+					// either the dividend is aligned, the divisor is aligned, or
+					// neither are aligned. all we know so far is that they have different
+					// alignment and that the dividend is 'more left' in their respective
+					// first nonzero words
+
+
+
+
+					// divisorWindow |= divisor[wordCounter] << offsetGap
+					// divisorWindow |= ((1<<(64-trail))-1  divisor[wordCounter-1]
+
+					// dividend[bitptr/64-((divisorHighBit/64)-wordCounter)] ^= divisor[wordCounter]
+				}
+
+
+
+
+
+				// the dividend highest bit is to the left of the divisor highest bit in their
+				// respective leftmost nonzero words
+
+			} else {
+
+			}
+
+
+
+			dividend[thunderbird] ^= (1<<(trail -1))
+			dividend[(bitptr-gap1)/64] ^= (1 << ((bitptr-gap1) % 64))
+			doublewide[(bitptr-gap1-gap2)/64] ^= (1 << ((bitptr-gap1-gap2) % 64))
+
+		} else {
+
+			bitptr -= uint64(skippo)
+		}
+	}
+
+	// either bitptr is exactly at F.Poly.HighBit or it's past it. if it's
+	// at it, then we need to check to see if that's a 1 and if so mod by
+	// the field polynomial.
+
+	if bitptr == F.Poly.HighBit {
+
+		if ((1<<(bitptr % 64)) & doublewide[bitptr/64]) > 0 {
+			doublewide[bitptr/64] ^= (1 << (bitptr % 64))
+			doublewide[(bitptr-gap1)/64] ^= (1 << ((bitptr-gap1) % 64))
+			doublewide[(bitptr-gap1-gap2)/64] ^= (1 << ((bitptr-gap1-gap2) % 64))
+		}
+	}
+
+	// now we need to pack the remainder into the return object
+	
+	for i=0; i<=F.Poly.HighWord; i++ {
+
+		e3.Packed[i]=doublewide[i]
+	}
+
+
+
+}
+
+func (e1 *Element, e2 *Element) ExtendedEuclideanAlgorithm(e3 *Element, F *Field) {
+
+	quotient  := make([]uint64, F.Poly.HighWord+1)
+	divisor   := make([]uint64, F.Poly.HighWord+1)
+	dividend   := make([]uint64, F.Poly.HighWord+1)
+	remainder := make([]uint64, F.Poly.HighWord+1)
+
+	e3:=new(Element)
+	e3.Init(e1.Field)
+
+	R:=new(Element)
+	R.Init(e1.Field)
+
+	NewR:=new(Element)
+	NewR.Init(e1.Field)
+
+	S:=new(Element)
+	S.Init(e1.Field)
+
+	NewS:=new(Element)
+	NewS.Init(e1.Field)
+
+	T:=new(Element)
+	T.Init(e1.Field)
+
+	NewT:=new(Element)
+	NewT.Init(e1.Field)
+
+	S.Packed[0]=1
+	NewS.Packed[0]=0
+
+	T.Packed[0]=0
+	NewT.Packed[0]=1
+
+	return(e3)	
+
+}
