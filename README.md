@@ -34,16 +34,25 @@ Timings for various values of k:
 for k=9689:
 
 steves-MacBook-Pro:gf2k uurtamo$ go test -bench=.
+
 goos: darwin
+
 goarch: amd64
+
 pkg: math/gf2k
+
 BenchmarkCount-8            	  468712	      2586 ns/op
+
 BenchmarkInvertSparse-8     	     100	  11642069 ns/op
+
 BenchmarkInvertHeavy-8      	       1	35185919923 ns/op
+
 BenchmarkMultiplySparse-8   	   61856	     22696 ns/op
+
 BenchmarkMultiplyHeavy-8    	     163	   7311963 ns/op
 
 inversion is still a big bear.
+
 sparse multiplication is fine.
 
 this can be used on streaming data as long as inverses are precalculated
